@@ -1,0 +1,20 @@
+<launch>
+  <include file="$(find neovio_autonomous_car)/launch/rplidar.launch" />
+  <include file="$(find neovio_autonomous_car)/launch/gmapping.launch" />
+
+  <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
+    <rosparam file="$(find neovio_autonomous_car)/config/costmap_common_params.yaml" command="load" ns="global_costmap" />
+    <rosparam file="$(find neovio_autonomous_car)/config/costmap_common_params.yaml" command="load" ns="local_costmap" />
+    <rosparam file="$(find neovio_autonomous_car)/config/local_costmap_params.yaml" command="load" />
+    <rosparam file="$(find neovio_autonomous_car)/config/global_costmap_params.yaml" command="load" />
+    <rosparam file="$(find neovio_autonomous_car)/config/base_local_planner_params.yaml" command="load" />
+  </node>
+
+  <node pkg="tf" type="static_transform_publisher" name="laser_tf" args="0 0 0 0 0 0 base_link laser 100" />
+
+  <node pkg="neovio_autonomous_car" type="motor_control_node.py" name="motor_control_node" output="screen">
+    <rosparam file="$(find neovio_autonomous_car)/config/motor_params.yaml" command="load" />
+  </node>
+
+  <param name="/trajectory_planner/map_frame" value="map" />
+</launch>
