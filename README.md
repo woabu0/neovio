@@ -1,174 +1,387 @@
-# RPLIDAR ROS package
+# Neovio Autonomous Robot Car
 
-ROS node and test application for RPLIDAR
+An autonomous robot car system built for Raspberry Pi 5 with RP Lidar A1, implementing SLAM (Simultaneous Localization and Mapping) using ROS (Robot Operating System).
 
-Visit following Website for more details about RPLIDAR:
+## Hardware Components
 
-rplidar roswiki: <http://wiki.ros.org/rplidar>
+- **Raspberry Pi 5** running Ubuntu
+- **RP Lidar A1** - 2D LiDAR sensor for mapping and obstacle detection
+- **Raspberry Pi Camera Module v2** - Vision sensor (optional for future use)
+- **L298N Motor Driver** - Dual H-bridge motor controller
+- **4 DC Motors** - Differential drive configuration
+- **4 Wheels** - Robot locomotion
 
-rplidar HomePage: <http://www.slamtec.com/en/Lidar>
+## Software Requirements
 
-rplidar SDK: <https://github.com/Slamtec/rplidar_sdk>
+### ROS Installation
 
-rplidar Tutorial: <https://github.com/robopeak/rplidar_ros/wiki>
-
-## How to build rplidar ros package
-
-   1) Clone this project to your catkin's workspace src folder
-   2) Running catkin_make to build rplidarNode and rplidarNodeClient
-
-## How to run rplidar ros package
-
-There're two ways to run rplidar ros package
-
-### I. Run rplidar node and view in the rviz
-
-The command for RPLIDAR A1 is :
+This project requires ROS Noetic (for Ubuntu 20.04) or ROS Melodic (for Ubuntu 18.04). Since you're using Ubuntu on Raspberry Pi 5, install ROS Noetic:
 
 ```bash
-roslaunch rplidar_ros view_rplidar_a1.launch
+# Add ROS Noetic repository
+sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list'
+sudo apt-key adv --keyserver 'hkp://keyserver.ubuntu.com:80' --recv-key C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654
+
+# Update package list
+sudo apt update
+
+# Install ROS Noetic Desktop Full
+sudo apt install ros-noetic-desktop-full -y
+
+# Initialize rosdep
+sudo rosdep init
+rosdep update
+
+# Source ROS setup
+echo "source /opt/ros/noetic/setup.bash" >> ~/.bashrc
+source ~/.bashrc
+
+# Install build tools
+sudo apt install python3-rosinstall python3-rosinstall-generator python3-wstool build-essential -y
 ```
 
-The command for RPLIDAR A2M7 is :
+### Required ROS Packages
+
+Install the following ROS packages:
 
 ```bash
-roslaunch rplidar_ros view_rplidar_a2m7.launch
+sudo apt install ros-noetic-gmapping -y
+sudo apt install ros-noetic-navigation -y
+sudo apt install ros-noetic-move-base -y
+sudo apt install ros-noetic-rviz -y
+sudo apt install ros-noetic-tf -y
+sudo apt install ros-noetic-geometry-msgs -y
+sudo apt install ros-noetic-sensor-msgs -y
+sudo apt install ros-noetic-nav-msgs -y
 ```
 
-The command for RPLIDAR A2M8 is :
+### Python Dependencies
 
 ```bash
-roslaunch rplidar_ros view_rplidar_a2m8.launch
+sudo apt install python3-pip -y
+pip3 install gpiozero
 ```
 
-The command for RPLIDAR A2M12 is :
+### USB Serial Permissions
+
+Add your user to the dialout group to access serial devices:
 
 ```bash
-roslaunch rplidar_ros view_rplidar_a2m12.launch
+sudo usermod -a -G dialout $USER
 ```
 
-The command for RPLIDAR A3 is :
+**Note:** You may need to log out and log back in for this to take effect.
+
+### Verify Setup
+
+Run the setup check script to verify your installation:
 
 ```bash
-roslaunch rplidar_ros view_rplidar_a3.launch
+cd ~/Documents/neovio
+./setup_check.sh
 ```
 
-The command for RPLIDAR S1 is :
+This will check:
+- ROS installation
+- Required ROS packages
+- Python dependencies
+- USB permissions
+- LiDAR device detection
+- Workspace structure
+
+## Project Setup
+
+### 1. Clone and Build the Workspace
 
 ```bash
-roslaunch rplidar_ros view_rplidar_s1.launch
+# Navigate to your workspace (this directory)
+cd ~/Documents/neovio
+
+# Build the catkin workspace
+catkin_make
+
+# Source the workspace
+source devel/setup.bash
+
+# Add to bashrc for persistence
+echo "source ~/Documents/neovio/devel/setup.bash" >> ~/.bashrc
 ```
 
-The command for RPLIDAR S2 is :
+### 2. Hardware Wiring Configuration
+
+#### L298N Motor Driver to Raspberry Pi GPIO
+
+The default GPIO pin configuration in the code is:
+
+**Left Motor:**
+- Enable Pin: GPIO 22
+- Forward Pin: GPIO 17
+- Backward Pin: GPIO 27
+
+**Right Motor:**
+- Enable Pin: GPIO 25
+- Forward Pin: GPIO 23
+- Backward Pin: GPIO 24
+
+**Note:** You can modify these pins in the launch files if your wiring is different.
+
+#### RP Lidar A1 Connection
+
+- Connect RP Lidar A1 to Raspberry Pi via USB (typically `/dev/ttyUSB0`)
+- Ensure the device has proper permissions (see USB Serial Permissions above)
+
+### 3. Configure Robot Parameters
+
+Edit the launch files to match your robot's physical parameters:
+
+**File:** `src/neovio_autonomous_car/launch/slam.launch`
+
+Adjust these parameters if needed:
+- `wheel_base`: Distance between left and right wheels (default: 0.26 meters)
+- `wheel_radius`: Radius of wheels (default: 0.065 meters)
+- `max_speed`: Maximum motor speed (default: 0.8)
+
+**File:** `src/neovio_autonomous_car/launch/slam.launch`
+
+Check the RPLIDAR serial port:
+- `serial_port`: Usually `/dev/ttyUSB0` or `/dev/ttyUSB1`
+- `serial_baudrate`: 115200 for RP Lidar A1
+
+To find your LiDAR device:
+```bash
+ls -l /dev/ttyUSB*
+```
+
+## Usage
+
+### Starting the System
+
+#### 1. Start ROS Master
+
+In the first terminal:
 
 ```bash
-roslaunch rplidar_ros view_rplidar_s2.launch
+cd ~/Documents/neovio
+source devel/setup.bash
+roscore
 ```
 
-The command for RPLIDAR S3 is :
+#### 2. Start SLAM Mapping
+
+In a second terminal:
 
 ```bash
-roslaunch rplidar_ros view_rplidar_s3.launch
+cd ~/Documents/neovio
+source devel/setup.bash
+roslaunch neovio_autonomous_car slam.launch
 ```
 
-The command for RPLIDAR S2E is :
+This will:
+- Start the robot base controller (motor control + odometry)
+- Start the RP Lidar A1 node
+- Start SLAM (gmapping)
+- Set up all necessary TF transforms
+
+#### 3. Visualize in RViz (Optional)
+
+In a third terminal:
 
 ```bash
-roslaunch rplidar_ros view_rplidar_s2e.launch
+cd ~/Documents/neovio
+source devel/setup.bash
+rosrun rviz rviz -d src/neovio_autonomous_car/rviz/slam.rviz
 ```
 
-The command for RPLIDAR T1 is :
+#### 4. Control the Robot
+
+You can control the robot using:
+
+**Teleoperation (Keyboard):**
+```bash
+rosrun teleop_twist_keyboard teleop_twist_keyboard.py
+```
+
+**Or publish commands directly:**
+```bash
+# Move forward
+rostopic pub /cmd_vel geometry_msgs/Twist "linear:
+  x: 0.2
+  y: 0.0
+  z: 0.0
+angular:
+  x: 0.0
+  y: 0.0
+  z: 0.0"
+
+# Stop
+rostopic pub /cmd_vel geometry_msgs/Twist "linear:
+  x: 0.0
+  y: 0.0
+  z: 0.0
+angular:
+  x: 0.0
+  y: 0.0
+  z: 0.0"
+```
+
+### Saving the Map
+
+Once you've mapped your environment, save it:
 
 ```bash
-roslaunch rplidar_ros view_rplidar_t1.launch
+# In a new terminal
+cd ~/Documents/neovio
+source devel/setup.bash
+rosrun map_server map_saver -f maps/my_map
 ```
 
-The command for RPLIDAR C1 is :
+This will create:
+- `maps/my_map.pgm` - The map image
+- `maps/my_map.yaml` - Map metadata
+
+### Autonomous Navigation (After Mapping)
+
+Once you have a saved map, you can use autonomous navigation:
+
+#### 1. Start Navigation Stack
 
 ```bash
-roslaunch rplidar_ros view_rplidar_c1.launch
+cd ~/Documents/neovio
+source devel/setup.bash
+roslaunch neovio_autonomous_car complete_system.launch
 ```
 
-You should see rplidar's scan result in the rviz.
+**Note:** You'll need to modify `complete_system.launch` to load your saved map instead of running SLAM.
 
-### II. Run rplidar node and view using test application
+#### 2. Set Initial Pose
 
-The command for RPLIDAR A1 is :
+In RViz, use the "2D Pose Estimate" tool to set the robot's initial position on the map.
 
-```bash
-roslaunch rplidar_ros rplidar_a1.launch
+#### 3. Set Navigation Goal
+
+In RViz, use the "2D Nav Goal" tool to set a destination. The robot will autonomously navigate to that location.
+
+## Project Structure
+
+```
+neovio/
+├── README.md                          # This file
+├── src/
+│   ├── CMakeLists.txt                # Workspace CMakeLists
+│   ├── neovio_autonomous_car/        # Main robot package
+│   │   ├── CMakeLists.txt
+│   │   ├── package.xml
+│   │   ├── scripts/
+│   │   │   ├── robot_base_controller.py  # Motor control + odometry
+│   │   │   ├── motor_control_node.py     # Legacy motor control
+│   │   │   └── voice_command_node.py     # Voice commands (optional)
+│   │   ├── launch/
+│   │   │   ├── slam.launch              # SLAM mapping launch file
+│   │   │   ├── navigation.launch        # Navigation stack
+│   │   │   ├── complete_system.launch   # Full system
+│   │   │   ├── gmapping.launch          # SLAM configuration
+│   │   │   └── rplidar.launch           # LiDAR configuration
+│   │   ├── config/
+│   │   │   ├── base_local_planner_params.yaml
+│   │   │   ├── costmap_common_params.yaml
+│   │   │   ├── global_costmap_params.yaml
+│   │   │   └── local_costmap_params.yaml
+│   │   └── rviz/
+│   │       ├── slam.rviz               # RViz config for SLAM
+│   │       └── navigation.rviz         # RViz config for navigation
+│   └── rplidar_ros/                   # RP Lidar ROS driver
+└── devel/                              # Build output (after catkin_make)
+└── build/                              # Build files (after catkin_make)
 ```
 
-The command for RPLIDAR A2M7 is :
+## Troubleshooting
 
-```bash
-roslaunch rplidar_ros rplidar_a2m7.launch
-```
+### LiDAR Not Detected
 
-The command for RPLIDAR A2M8 is :
+1. Check USB connection:
+   ```bash
+   ls -l /dev/ttyUSB*
+   ```
 
-```bash
-roslaunch rplidar_ros rplidar_a2m8.launch
-```
+2. Check permissions:
+   ```bash
+   groups  # Should include 'dialout'
+   ```
 
-The command for RPLIDAR A2M12 is :
+3. Try different serial port in launch file (`/dev/ttyUSB1`, `/dev/ttyACM0`, etc.)
 
-```bash
-roslaunch rplidar_ros rplidar_a2m12.launch
-```
+### Motors Not Responding
 
-The command for RPLIDAR A3 is :
+1. Check GPIO pin configuration matches your wiring
+2. Verify L298N power supply is connected
+3. Check motor connections to L298N
+4. Test motors directly (bypass ROS) to verify hardware
 
-```bash
-roslaunch rplidar_ros rplidar_a3.launch
-```
+### SLAM Not Working
 
-The command for RPLIDAR S1 is :
+1. Ensure odometry is being published:
+   ```bash
+   rostopic echo /odom
+   ```
 
-```bash
-roslaunch rplidar_ros rplidar_s1.launch
-```
+2. Check LiDAR scan data:
+   ```bash
+   rostopic echo /scan
+   ```
 
-The command for RPLIDAR S2 is :
+3. Verify TF tree:
+   ```bash
+   rosrun tf view_frames
+   evince frames.pdf
+   ```
 
-```bash
-roslaunch rplidar_ros rplidar_s2.launch
-```
+4. Check for TF errors:
+   ```bash
+   rosrun tf tf_echo map odom
+   ```
 
-The command for RPLIDAR S3 is :
+### Build Errors
 
-```bash
-roslaunch rplidar_ros rplidar_s3.launch
-```
+1. Ensure all dependencies are installed
+2. Clean and rebuild:
+   ```bash
+   cd ~/Documents/neovio
+   rm -rf build devel
+   catkin_make
+   ```
 
-The command for RPLIDAR S2E is :
+## Configuration Tips
 
-```bash
-roslaunch rplidar_ros rplidar_s2e.launch
-```
+### Adjusting SLAM Parameters
 
-The command for RPLIDAR T1 is :
+Edit `src/neovio_autonomous_car/launch/gmapping.launch` to tune SLAM performance:
+- `particles`: Number of particles (more = better but slower, default: 30)
+- `maxUrange`: Maximum usable range of laser (default: 6.0)
+- `linearUpdate`: Update map after moving this distance (default: 1.0)
+- `angularUpdate`: Update map after rotating this angle (default: 0.5)
 
-```bash
-roslaunch rplidar_ros rplidar_t1.launch
-```
+### Adjusting Navigation Parameters
 
-The command for RPLIDAR C1 is :
+Edit files in `src/neovio_autonomous_car/config/`:
+- `base_local_planner_params.yaml`: Local planner behavior
+- `costmap_common_params.yaml`: Obstacle detection settings
+- `local_costmap_params.yaml`: Local costmap size and resolution
+- `global_costmap_params.yaml`: Global costmap settings
 
-```bash
-roslaunch rplidar_ros rplidar_c1.launch
-```
+## Next Steps
 
-and in another terminal, run the following command
+1. **Improve Odometry**: Integrate wheel encoders for more accurate odometry
+2. **Camera Integration**: Add camera node for visual SLAM or object detection
+3. **Voice Commands**: Implement voice control using the voice_command_node
+4. **Map Server**: Set up persistent map loading for navigation
+5. **Safety Features**: Add emergency stop and obstacle avoidance behaviors
 
-```bash
-rosrun rplidar_ros rplidarNodeClient
-```
+## License
 
-You should see rplidar's scan result in the console.
+MIT License
 
-Notice: different lidar use different serial_baudrate.
+## Support
 
-## RPLidar frame
-
-RPLidar frame must be broadcasted according to picture shown in rplidar-frame.png
+For issues and questions, please check:
+- ROS Wiki: http://wiki.ros.org/
+- RP Lidar Documentation: https://github.com/robopeak/rplidar_ros
